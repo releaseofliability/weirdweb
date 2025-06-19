@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  weirdweb:
+    container_name: weirdweb
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./assets:/app/assets
+      - ./public:/app/public
+      - ./config.yml:/app/config.yml
+    restart: always

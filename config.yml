@@ -1,0 +1,59 @@
+regenerate-assets: true # regenerate assets at start
+
+# Asset source URLs (will download to local assets folder)
+asset-sources:
+  images: []
+  gifs: []
+  texts:
+    - https://baconipsum.com/api/?type=meat-and-filler&paras=5&format=text
+    - https://lipsum.com/feed/html?amount=1
+  fonts:
+    - https://www.dtm-game.com/assets/minecraft.ttf
+
+# Layer settings
+layer-settings:
+  layerCount: 8
+  maxAssetsPerLayer: 150
+  pageHeightMultiplier: 8
+
+# Effect chances (0.0 to 1.0)
+effect-chances:
+  textBackground: 0.03
+  movingText: 0.1
+  backgroundImage: 1.0
+  textShadow: 0.2
+  rotateElement: 0.15
+  scaleElement: 0.2
+  gradientBackground: 0.05
+  textDecoration: 0.8
+
+# Scrape targets (will scrape content and save to assets)
+scrape-targets:
+  - https://archive.4plebs.org/x/
+  - https://www.lainchan.org/random/
+  - https://dreamcore.neocities.org/
+  - https://kohlchan.net/b/
+  - https://cyber.dabamos.de/88x31/
+  - https://boards.4chan.org/sp/
+  - https://boards.4chan.org/ck/
+  - https://www.angelfire.com/space2/oldsite/
+  - https://www.geocities.ws/
+  - https://web.archive.org/web/20091027094208/http://www.geocities.com/enchantedforest/1417/
+  - https://oocities.org/
+  - https://www.somethingawful.com/
+  - https://totallycrap.com/
+  - https://www.404pagefound.com/
+  - https://www.jodi.org/
+  - https://www.milk.com/
+  - https://www.homestarrunner.com/
+  - https://www.donationcoder.com/Software/Skrommel/index.html
+  - https://www.angelfire.com/journal2/ulillillia/index.html
+  - https://gifcities.org/search?q=anime&offset=0&page_size=100
+  - https://gifcities.org/search?q=1999&offset=0&page_size=100
+  - https://gifcities.org/search?q=weird&offset=0&page_size=100
+  - https://gifcities.org/search?q=shapes&offset=0&page_size=50
+  - https://gifcities.org/search?q=retro&offset=0&page_size=20
+  - https://gifcities.org/search?q=mario&offset=0&page_size=20
+  - https://gifcities.org/search?q=landscape&offset=0&page_size=50
+  - https://gifcities.org/search?q=memes&offset=0&page_size=100
+

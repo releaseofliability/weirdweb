@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>weirdness</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #FFF;
+      overflow: vertical;
+      height: auto;
+      min-height: 100vh;
+      color: #000;
+    }
+    
+    .layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      min-height: 100vh;
+      pointer-events: none;
+    }
+    
+    .chaos-element {
+      position: absolute;
+      user-select: text;
+    }
+    
+    .text-element {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      line-clamp: 5; 
+      -webkit-box-orient: vertical;
+    }
+    
+    .moving-text {
+      animation: move 5s linear infinite;
+    }
+    
+    @keyframes move {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(50px); }
+      100% { transform: translateX(0); }
+    }
+    
+    #loading-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border: 2px solid #000;
+      z-index: 9999;
+      font-size: 18px;
+      text-align: center;
+    }
+    
+    #disclaimer-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    
+    #disclaimer-content {
+      background: #fff;
+      padding: 30px;
+      max-width: 700px;
+      text-align: center;
+      border: 2px solid #000;
+    }
+    
+    #disclaimer-content h2 {
+      color: #ff5555;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    
+    #disclaimer-content p, #disclaimer-content ul {
+      font-size: 18px;
+      line-height: 1.6;
+      color: #000;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    
+    #disclaimer-content ul {
+      padding-left: 20px;
+    }
+    
+    #disclaimer-content li {
+      margin-bottom: 8px;
+    }
+
+    #disclaimer-content label {
+      color: #000;
+    }
+    
+    #disclaimer-content button {
+      background: #fff;
+      color: black;
+      border: 2px solid #000;
+      padding: 12px 30px;
+      margin-top: 25px;
+      cursor: pointer;
+      border-radius: 0px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    #dont-show-container {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #dont-show-again {
+      margin-right: 10px;
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Disclaimer Modal -->
+  <div id="disclaimer-modal">
+    <div id="disclaimer-content">
+      <h2 id="warning-title" style="color: #ff5555;">Content Warning</h2>
+      <p>This website contains randomly generated or archived content that may include:</p>
+      <ul>
+        <li>Flashing images that may cause discomfort for people with photosensitive epilepsy</li>
+        <li>Sensitive, disturbing, or controversial material</li>
+        <li>Historical symbols or imagery presented out of context</li>
+        <li>Unexpected or chaotic visual and textual elements</li>
+      </ul>
+      <p>The purpose of this project is artistic exploration and digital archaeology. We do <strong>not</strong> endorse or support any ideologies, beliefs, or messages that may appear in the sourced or generated content.</p>
+      <div id="dont-show-container">
+        <input type="checkbox" id="dont-show-again">
+        <label for="dont-show-again">Don't show this warning again for 1 week</label>
+      </div>
+      <button id="accept-disclaimer">I Understand and Wish to Proceed</button>
+    </div>
+  </div>
+  <div id="logo-container" style="position: absolute; top: 10px; left: 10px; z-index: 1000;">
+    <img src="logo.png" alt="Logo" style="max-width: 100px; max-height: 100px;">
+  </div>
+  <div id="loading-message">Loading assets, please wait...</div>
+  <script>
+    let config = {
+      layerCount: 10,
+      maxAssetsPerLayer: 100,
+      pageHeightMultiplier: 3
+    };
+    
+    let effectChances = {
+      textBackground: 0.3,
+      movingText: 0.1,
+      backgroundImage: 0.05,
+      textShadow: 0.2,
+      rotateElement: 0.15,
+      scaleElement: 0.1
+    };
+    
+    const assets = {
+      images: [],
+      gifs: [],
+      texts: [],
+      fonts: ["'Comic Sans MS'", "'Courier New'", "'Impact'", "Arial", "Verdana", "Times New Roman"]
+    };
+    
+    async function loadConfig() {
+      try {
+        const res = await fetch('/config');
+        if (res.ok) {
+          const serverConfig = await res.json();
+          config = { ...serverConfig };
+          if (serverConfig['effect-chances']) {
+            effectChances = serverConfig['effect-chances'];
+          }
+          console.log('Loaded config from server', config);
+          console.log('Effect chances', effectChances);
+        }
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    }
+    
+    async function loadAssets() {
+      try {
+        const imgRes = await fetch('/assets/img');
+        if (imgRes.ok) {
+          const imgList = await imgRes.json();
+          assets.images = imgList.map(file => `/assets/img/${file}`);
+        }
+        
+        const gifRes = await fetch('/assets/gif');
+        if (gifRes.ok) {
+          const gifList = await gifRes.json();
+          assets.gifs = gifList.map(file => `/assets/gif/${file}`);
+        }
+        
+        const textRes = await fetch('/assets/texts');
+        if (textRes.ok) {
+          const textList = await textRes.json();
+          for (const file of textList) {
+            try {
+              const contentRes = await fetch(`/assets/texts/${file}`);
+              if (contentRes.ok) {
+                const content = await contentRes.text();
+                const lines = content.split('\n').filter(line => line.trim().length > 0);
+                assets.texts.push(...lines);
+              }
+            } catch (err) {
+              console.error(`Error fetching text file ${file}:`, err);
+            }
+          }
+        }
+        
+        const fontRes = await fetch('/assets/fonts');
+        if (fontRes.ok) {
+          const fontList = await fontRes.json();
+          for (const fontFile of fontList) {
+            try {
+              const fontUrl = `/assets/fonts/${fontFile}`;
+              if (fontFile.endsWith('.ttf') || fontFile.endsWith('.otf')) {
+                const fontName = fontFile.split('.')[0].replace(/-/g, ' ');
+                const style = document.createElement('style');
+                style.textContent = `
+                  @font-face {
+                    font-family: '${fontName}';
+                    src: url('${fontUrl}') format('${fontFile.endsWith('.ttf') ? 'truetype' : 'opentype'}');
+                  }
+                `;
+                document.head.appendChild(style);
+                assets.fonts.push(`'${fontName}'`);
+              } else if (fontFile.endsWith('.css')) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = fontUrl;
+                document.head.appendChild(link);
+                const fontName = fontFile.split('.')[0].replace(/-/g, ' ');
+                assets.fonts.push(`'${fontName}'`);
+              }
+            } catch (err) {
+              console.error(`Error loading font ${fontFile}:`, err);
+            }
+          }
+        }
+        
+        // If no assets were loaded, fall back to default
+        if (assets.images.length === 0) {
+          assets.images = ['https://picsum.photos/200/300', 'https://source.unsplash.com/random'];
+        }
+        if (assets.gifs.length === 0) {
+          assets.gifs = ['https://media.giphy.com/media/l0HlG8vJXW0X5yX4s/giphy.gif', 'https://media.giphy.com/media/3o7TKsrfldwKzS5GXu/giphy.gif'];
+        }
+        if (assets.texts.length === 0) {
+          assets.texts = ["Never gonna give you up...", " Ancient Knowledge Unlocked", "404 NOT FOUND - but your soul is"];
+        }
+      } catch (error) {
+        console.error('Error loading assets:', error);
+        // Use fallback assets if fetch fails
+        assets.images = ['https://picsum.photos/200/300', 'https://source.unsplash.com/random'];
+        assets.gifs = ['https://media.giphy.com/media/l0HlG8vJXW0X5yX4s/giphy.gif', 'https://media.giphy.com/media/3o7TKsrfldwKzS5GXu/giphy.gif'];
+        assets.texts = ["Never gonna give you up...", " Ancient Knowledge Unlocked", "404 NOT FOUND - but your soul is"];
+      }
+    }
+    
+    function rand(a) { return a[Math.floor(Math.random() * a.length)]; }
+    function randPos(max) { return Math.random() * max; }
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    
+    function applyRandomEffects(el, layer) {
+      // Random text shadow
+      if (Math.random() < effectChances.textShadow) {
+        el.style.textShadow = `2px 2px 4px rgba(0, 0, 0, ${Math.random() * 0.5 + 0.3})`;
+      }
+      
+      // Random rotation
+      if (Math.random() < effectChances.rotateElement) {
+        el.style.transform = `rotate(${randInt(-30, 30)}deg)`;
+      }
+      
+      // Random scale
+      if (Math.random() < effectChances.scaleElement) {
+        const scale = Math.random() * 1.5 + 0.5; // Between 0.5 and 2.0
+        el.style.transform = el.style.transform ? `${el.style.transform} scale(${scale})` : `scale(${scale})`;
+      }
+      
+      // Random text background
+      if (el.tagName === 'SPAN' && Math.random() < effectChances.textBackground) {
+        const r = Math.floor(Math.random() * 256), g = Math.floor(Math.random() * 256), b = Math.floor(Math.random() * 256);
+        el.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+        el.style.padding = '2px 5px';
+        el.style.borderRadius = '3px';
+      }
+      
+      // Random gradient background
+      if (Math.random() < (effectChances.gradientBackground || 0.05)) {
+        const r1 = Math.floor(Math.random() * 256), g1 = Math.floor(Math.random() * 256), b1 = Math.floor(Math.random() * 256);
+        const r2 = Math.floor(Math.random() * 256), g2 = Math.floor(Math.random() * 256), b2 = Math.floor(Math.random() * 256);
+        el.style.background = `linear-gradient(45deg, rgba(${r1}, ${g1}, ${b1}, 0.5), rgba(${r2}, ${g2}, ${b2}, 0.5))`;
+      }
+      
+      // Random text decoration
+      if (el.tagName === 'SPAN' && Math.random() < (effectChances.textDecoration || 0.1)) {
+        const decorations = ['underline', 'overline', 'line-through'];
+        const decoration = decorations[Math.floor(Math.random() * decorations.length)];
+        el.style.textDecoration = decoration;
+      }
+    }
+    
+    function createText(layer) {
+      const el = document.createElement('div');
+      el.className = 'chaos-element text-element';
+      el.style.color = `hsl(${Math.random()*360},100%,50%)`;
+      el.style.fontSize = `${randInt(8, 48)}px`;
+      el.style.fontFamily = rand(assets.fonts);
+      el.style.left = `${randPos(window.innerWidth + 100) - 50}px`;
+      el.style.top = `${randPos(window.innerHeight * config.pageHeightMultiplier) - 100}px`;
+      el.style.zIndex = layer * 10 + randInt(1, 5);
+      el.textContent = rand(assets.texts);
+      
+      // Random background for text
+      if (Math.random() < effectChances.textBackground) {
+        el.style.backgroundColor = `hsl(${Math.random()*360},80%,80%)`;
+        el.style.padding = '5px';
+      }
+      
+      // Random moving text
+      if (Math.random() < effectChances.movingText) {
+        el.classList.add('moving-text');
+      }
+      
+      applyRandomEffects(el, layer);
+      return el;
+    }
+    
+    function createImage(layer) {
+      const el = document.createElement('img');
+      el.className = 'chaos-element';
+      const src = rand([...assets.images, ...assets.gifs]);
+      el.src = src;
+      el.style.width = `${randInt(30, 200)}px`;
+      el.style.left = `${randPos(window.innerWidth + 100) - 50}px`;
+      el.style.top = `${randPos(window.innerHeight * config.pageHeightMultiplier) - 100}px`;
+      el.style.zIndex = layer * 10 + randInt(1, 5);
+      el.style.opacity = Math.random() * 0.5 + 0.5;
+      
+      applyRandomEffects(el, layer);
+      return el;
+    }
+    
+    function createLayer(layerIndex) {
+      const layer = document.createElement('div');
+      layer.className = 'layer';
+      layer.style.zIndex = layerIndex * 10;
+      layer.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
+      // Use IntersectionObserver for lazy loading
+      const assetCount = randInt(config.maxAssetsPerLayer * 0.8, config.maxAssetsPerLayer);
+      for (let i = 0; i < assetCount; i++) {
+        const isText = Math.random() < 0.5; // 50% chance for text, 50% for image/gif
+        const el = isText ? createText(layerIndex) : createImage(layerIndex);
+        layer.appendChild(el);
+      }
+      
+      return layer;
+    }
+    
+    function initChaos() {
+      document.body.innerHTML = '';
+      document.body.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
+      for (let i = 0; i < config.layerCount; i++) {
+        const layer = createLayer(i);
+        document.body.appendChild(layer);
+      }
+      
+      const loadingMessage = document.getElementById('loading-message');
+      if (loadingMessage) {
+        loadingMessage.style.display = 'none';
+      }
+    }
+    
+    function applyBackgroundImage() {
+      console.log('Checking background image application...');
+      console.log('Assets images length:', assets.images.length);
+      console.log('Config effect chances:', effectChances);
+      if (assets.images.length > 0 && effectChances) {
+        console.log('Background image chance:', effectChances.backgroundImage);
+        if (effectChances.backgroundImage === 1.0 || Math.random() < (effectChances.backgroundImage || 0.1)) {
+          console.log('Attempting to set background image...');
+          const bgImage = rand(assets.images);
+          if (bgImage) {
+            console.log('Setting background image:', bgImage);
+            document.body.style.backgroundImage = `url('${bgImage}')`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+          } else {
+            console.log('No background image selected.');
+          }
+        } else {
+          console.log('Chance did not trigger for background image.');
+          document.body.style.backgroundColor = '#ffffff';
+        }
+      } else {
+        console.log('Assets or config not ready for background image.');
+        document.body.style.backgroundColor = '#ffffff';
+      }
+    }
+    
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    
+    const disclaimerCookie = getCookie('disclaimerAccepted');
+    
+    if (!disclaimerCookie) {
+      document.getElementById('disclaimer-modal').style.display = 'flex';
+      document.getElementById('loading-message').style.display = 'none';
+      
+      document.getElementById('accept-disclaimer').addEventListener('click', () => {
+        const dontShowAgain = document.getElementById('dont-show-again').checked;
+        
+        if (dontShowAgain) {
+          const date = new Date();
+          date.setDate(date.getDate() + 7);
+          document.cookie = `disclaimerAccepted=true; expires=${date.toUTCString()}; path=/`;
+        } else {
+          const date = new Date();
+          date.setTime(date.getTime() + 30 * 1000);
+          document.cookie = `disclaimerAccepted=true; expires=${date.toUTCString()}; path=/`;
+        }
+        
+        location.reload();
+      });
+    } else {
+      initializeApp();
+    }
+    
+    function initializeApp() {
+      window.addEventListener('load', async () => {
+        await loadConfig();
+        await loadAssets();
+        applyBackgroundImage();
+        initChaos();
+      });
+    }
+  </script>
+</body>
+</html>
