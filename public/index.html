@@ -175,7 +175,8 @@
       backgroundImage: 0.05,
       textShadow: 0.2,
       rotateElement: 0.15,
-      scaleElement: 0.1
+      scaleElement: 0.1,
+      stretch: 0.05
     };
     
     const assets = {
@@ -288,11 +289,6 @@
     function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
     
     function applyRandomEffects(el, layer) {
-      // Random text shadow
-      if (Math.random() < effectChances.textShadow) {
-        el.style.textShadow = `2px 2px 4px rgba(0, 0, 0, ${Math.random() * 0.5 + 0.3})`;
-      }
-      
       // Random rotation
       if (Math.random() < effectChances.rotateElement) {
         el.style.transform = `rotate(${randInt(-30, 30)}deg)`;
@@ -304,26 +300,18 @@
         el.style.transform = el.style.transform ? `${el.style.transform} scale(${scale})` : `scale(${scale})`;
       }
       
-      // Random text background
-      if (el.tagName === 'SPAN' && Math.random() < effectChances.textBackground) {
-        const r = Math.floor(Math.random() * 256), g = Math.floor(Math.random() * 256), b = Math.floor(Math.random() * 256);
-        el.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
-        el.style.padding = '2px 5px';
-        el.style.borderRadius = '3px';
+      if (Math.random() < effectChances.movingText) {
+        el.classList.add('moving-text');
+        const dx = (Math.random() - 0.5) * 2;
+        const dy = (Math.random() - 0.5) * 2;
+        movingTexts.push({ element: el, dx, dy });
       }
-      
-      // Random gradient background
-      if (Math.random() < (effectChances.gradientBackground || 0.05)) {
-        const r1 = Math.floor(Math.random() * 256), g1 = Math.floor(Math.random() * 256), b1 = Math.floor(Math.random() * 256);
-        const r2 = Math.floor(Math.random() * 256), g2 = Math.floor(Math.random() * 256), b2 = Math.floor(Math.random() * 256);
-        el.style.background = `linear-gradient(45deg, rgba(${r1}, ${g1}, ${b1}, 0.5), rgba(${r2}, ${g2}, ${b2}, 0.5))`;
-      }
-      
-      // Random text decoration
-      if (el.tagName === 'SPAN' && Math.random() < (effectChances.textDecoration || 0.1)) {
-        const decorations = ['underline', 'overline', 'line-through'];
-        const decoration = decorations[Math.floor(Math.random() * decorations.length)];
-        el.style.textDecoration = decoration;
+
+      // Apply stretch effect
+      if (Math.random() < (effectChances.stretch || 0.05)) {
+        const stretchEffect = new StretchEffect(el);
+        activeEffects.push(stretchEffect);
+        console.log('Stretch effect applied to element:', el);
       }
     }
     
@@ -343,10 +331,32 @@
         el.style.backgroundColor = `hsl(${Math.random()*360},80%,80%)`;
         el.style.padding = '5px';
       }
+
+      // Random text decoration
+      if (Math.random() < (effectChances.textDecoration || 0.1)) {
+        const decorations = ['underline', 'overline', 'line-through'];
+        const decoration = decorations[Math.floor(Math.random() * decorations.length)];
+        el.style.textDecoration = decoration;
+      }
+
+      // Random text shadow
+      if (Math.random() < effectChances.textShadow) {
+        el.style.textShadow = `2px 2px 4px rgba(0, 0, 0, ${Math.random() * 0.5 + 0.3})`;
+      }
+
+      // Random text background
+      if (el.tagName === 'SPAN' && Math.random() < effectChances.textBackground) {
+        const r = Math.floor(Math.random() * 256), g = Math.floor(Math.random() * 256), b = Math.floor(Math.random() * 256);
+        el.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+        el.style.padding = '2px 5px';
+        el.style.borderRadius = '3px';
+      }
       
-      // Random moving text
-      if (Math.random() < effectChances.movingText) {
-        el.classList.add('moving-text');
+      // Random gradient background
+      if (Math.random() < (effectChances.gradientBackground || 0.05)) {
+        const r1 = Math.floor(Math.random() * 256), g1 = Math.floor(Math.random() * 256), b1 = Math.floor(Math.random() * 256);
+        const r2 = Math.floor(Math.random() * 256), g2 = Math.floor(Math.random() * 256), b2 = Math.floor(Math.random() * 256);
+        el.style.background = `linear-gradient(45deg, rgba(${r1}, ${g1}, ${b1}, 0.5), rgba(${r2}, ${g2}, ${b2}, 0.5))`;
       }
       
       applyRandomEffects(el, layer);
@@ -358,6 +368,7 @@
       el.className = 'chaos-element';
       const src = rand([...assets.images, ...assets.gifs]);
       el.src = src;
+      el.loading = 'lazy';
       el.style.width = `${randInt(30, 200)}px`;
       el.style.left = `${randPos(window.innerWidth + 100) - 50}px`;
       el.style.top = `${randPos(window.innerHeight * config.pageHeightMultiplier) - 100}px`;
@@ -384,20 +395,138 @@
       return layer;
     }
     
+    class StretchEffect {
+      constructor(element) {
+        this.element = element;
+        this.active = true;
+        this.phase = 'stretch';
+        this.duration = 500 + Math.random() * 4000; 
+        this.startTime = performance.now();
+        this.animationId = null;
+        
+        // Save original dimensions and position
+        const rect = this.element.getBoundingClientRect();
+        this.originalWidth = rect.width;
+        this.originalHeight = rect.height;
+        this.originalLeft = rect.left;
+        this.originalTop = rect.top;
+        
+        // Random parameters for direction and intensity
+        const directions = [-2, -1, 0, 1, 2];
+        this.direction = directions[Math.floor(Math.random() * directions.length)];
+        this.intensity = 0.3 + Math.random() * 3.0;
+        
+        // Set up for animation
+        this.element.style.position = 'absolute';
+        this.element.style.zIndex = '1000';
+        this.element.style.willChange = 'transform, width, height';
+        
+        // Start animation immediately
+        this.animate();
+      }
+
+      animate() {
+        if (!this.active) return;
+        
+        const now = performance.now();
+        const elapsed = now - this.startTime;
+        const progress = Math.min(elapsed / this.duration, 1);
+        
+        // Easing function for smoother animation
+        const easeOutQuad = t => t * (2 - t);
+        const easedProgress = easeOutQuad(progress);
+        
+        // Calculate distortion values based on phase
+        let scaleX, scaleY, rotate;
+        
+        if (this.phase === 'stretch') {
+          // Stretching phase with random direction and intensity
+          scaleX = 1 + easedProgress * this.intensity * (this.direction > 0 ? 1 : 0.3);
+          scaleY = 1 + easedProgress * this.intensity * (this.direction < 0 ? 1 : 0.3);
+          rotate = easedProgress * 30 * this.direction; // Rotate in random direction
+        } else {
+          // Shrinking phase
+          scaleX = 1 + (1 - easedProgress) * this.intensity * (this.direction > 0 ? 1 : 0.3);
+          scaleY = 1 + (1 - easedProgress) * this.intensity * (this.direction < 0 ? 1 : 0.3);
+          rotate = (1 - easedProgress) * 30 * this.direction;
+        }
+        
+        // Apply perspective distortion
+        this.element.style.transform = `perspective(1000px) rotate(${rotate}deg) scale(${scaleX}, ${scaleY})`;
+        
+        if (progress < 1) {
+          this.animationId = requestAnimationFrame(() => this.animate());
+        } else {
+          // Switch to next phase
+          this.phase = this.phase === 'stretch' ? 'shrink' : 'stretch';
+          this.startTime = now;
+          this.animate();
+        }
+      }
+      
+      stop() {
+        this.active = false;
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+        // Reset element styles
+        this.element.style.transform = '';
+      }
+    }
+    
+    // Global arrays for animation
+    let movingTexts = [];
+    let activeEffects = [];
+
+    function update() {
+      // Update moving texts
+      movingTexts.forEach(text => {
+        if (text.element && text.element.parentNode) {
+          text.element.style.left = `${parseInt(text.element.style.left) + text.dx}px`;
+          text.element.style.top = `${parseInt(text.element.style.top) + text.dy}px`;
+        }
+      });
+
+      // Filter out any effects that are no longer active
+      activeEffects = activeEffects.filter(effect => effect.active);
+      
+      // Clean up any null or undefined effects
+      activeEffects = activeEffects.filter(Boolean);
+      
+      requestAnimationFrame(update);
+    }
+
     function initChaos() {
       document.body.innerHTML = '';
       document.body.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
-      for (let i = 0; i < config.layerCount; i++) {
-        const layer = createLayer(i);
-        document.body.appendChild(layer);
-      }
+      
+      // Reset global arrays
+      movingTexts = [];
+      activeEffects = [];
       
       const loadingMessage = document.getElementById('loading-message');
       if (loadingMessage) {
         loadingMessage.style.display = 'none';
       }
+      
+      // Create layers
+      for (let i = 0; i < (config.layerSettings?.layerCount || 5); i++) {
+        const layer = createLayer(i);
+        document.body.appendChild(layer);
+      }
+      
+      applyBackgroundImage();
+      
+      // Start the animation loop if not already running
+      if (!window.animationRunning) {
+        window.animationRunning = true;
+        update();
+      }
+      
+      console.log('Chaos initialized with stretch effect chance:', effectChances.stretch || 0.05);
     }
-    
+
     function applyBackgroundImage() {
       console.log('Checking background image application...');
       console.log('Assets images length:', assets.images.length);
@@ -462,7 +591,6 @@
       window.addEventListener('load', async () => {
         await loadConfig();
         await loadAssets();
-        applyBackgroundImage();
         initChaos();
       });
     }

@@ -12,9 +12,9 @@ asset-sources:
 
 # Layer settings
 layer-settings:
-  layerCount: 8
-  maxAssetsPerLayer: 150
-  pageHeightMultiplier: 8
+  layerCount: 10
+  maxAssetsPerLayer: 200
+  pageHeightMultiplier: 5
 
 # Effect chances (0.0 to 1.0)
 effect-chances:
@@ -26,6 +26,7 @@ effect-chances:
   scaleElement: 0.2
   gradientBackground: 0.05
   textDecoration: 0.8
+  stretch: 0.125
 
 # Scrape targets (will scrape content and save to assets)
 scrape-targets:
