@@ -8,6 +8,8 @@
 
 WeirdWeb creates unpredictable web experiences by scraping and combining content from various sources. The result is a constantly changing, chaotic web environment. 🌀
 
+https://www.youtube.com/watch?v=stIrvJ2FEfs
+
 ## 🌀 Features
 
 - 🌐 Content scraping from diverse sources
