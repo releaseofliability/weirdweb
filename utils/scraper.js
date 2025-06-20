@@ -39,10 +39,10 @@ async function scrapeWebsite(url, config) {
       }
     });
     if (texts.length > 0) {
-      const textFile = path.join(ASSETS_DIR, 'texts', `scraped-${Date.now()}.txt`);
-      fs.writeFileSync(textFile, texts.join('\n\n'), 'utf8');
-      console.log(chalk.green(`✓ Saved ${texts.length} text snippets to ${textFile}`));
-    }
+        const textFile = path.join(ASSETS_DIR, 'texts', `scraped-${Date.now()}.txt`);
+        fs.writeFileSync(textFile, texts.join('\n\n'), 'utf8');
+        console.log(chalk.green(`✓ Saved ${texts.length} text snippets to ${textFile}`));
+      }
 
     // Scrape images
     const images = [];
@@ -57,6 +57,19 @@ async function scrapeWebsite(url, config) {
     });
     for (const imgUrl of images.slice(0, config['layer-settings']['max-assets-per-layer'])) {
       try {
+        if (config['scraping-mode'] === 'fast') {
+          console.log(chalk.blue(`Checking URL: ${imgUrl}`));
+          const imgRes = await fetch(imgUrl, { method: 'HEAD', timeout: 5000 });
+          if (imgRes.ok) {
+            const ext = imgUrl.match(/\.(jpe?g|png|gif|webp)$/i)?.[0] || '.jpg';
+            const linkFilePath = path.join(ASSETS_DIR, ext === '.gif' ? 'gif' : 'img', 'links.txt');
+            fs.appendFileSync(linkFilePath, imgUrl + '\n', 'utf8');
+            console.log(chalk.green(`✓ Fast mode: Saved URL ${imgUrl} to ${linkFilePath}`));
+          } else {
+            console.log(chalk.red(`✗ Fast mode: URL ${imgUrl} did not respond (status: ${imgRes.status})`));
+          }
+          continue;
+        }
         const imgRes = await fetch(imgUrl);
         if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
         const ext = imgUrl.match(/\.(jpe?g|png|gif|webp)$/i)?.[0] || '.jpg';

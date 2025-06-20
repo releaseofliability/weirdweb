@@ -205,17 +205,43 @@
     
     async function loadAssets() {
       try {
+        // Load local images
         const imgRes = await fetch('/assets/img');
         if (imgRes.ok) {
           const imgList = await imgRes.json();
           assets.images = imgList.map(file => `/assets/img/${file}`);
         }
         
+        // Also load image URLs from links.txt if it exists
+        const imgLinksRes = await fetch('/assets/img/links.txt');
+        if (imgLinksRes.ok) {
+          const imgLinksText = await imgLinksRes.text();
+          const imgUrls = imgLinksText.split('\n').filter(url => url.trim() !== '');
+          if (imgUrls.length > 0) {
+            assets.images = assets.images.concat(imgUrls);
+            console.log('Added image URLs from links.txt', imgUrls.length);
+          }
+        }
+        console.log('Total images loaded', assets.images.length);
+        
+        // Load local GIFs
         const gifRes = await fetch('/assets/gif');
         if (gifRes.ok) {
           const gifList = await gifRes.json();
           assets.gifs = gifList.map(file => `/assets/gif/${file}`);
         }
+        
+        // Also load GIF URLs from links.txt if it exists
+        const gifLinksRes = await fetch('/assets/gif/links.txt');
+        if (gifLinksRes.ok) {
+          const gifLinksText = await gifLinksRes.text();
+          const gifUrls = gifLinksText.split('\n').filter(url => url.trim() !== '');
+          if (gifUrls.length > 0) {
+            assets.gifs = assets.gifs.concat(gifUrls);
+            console.log('Added GIF URLs from links.txt', gifUrls.length);
+          }
+        }
+        console.log('Total GIFs loaded', assets.gifs.length);
         
         const textRes = await fetch('/assets/texts');
         if (textRes.ok) {
@@ -275,6 +301,9 @@
         if (assets.texts.length === 0) {
           assets.texts = ["Never gonna give you up...", " Ancient Knowledge Unlocked", "404 NOT FOUND - but your soul is"];
         }
+        
+        document.getElementById('loading-message').style.display = 'none';
+        initChaos();
       } catch (error) {
         console.error('Error loading assets:', error);
         // Use fallback assets if fetch fails
