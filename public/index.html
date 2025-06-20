@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-y: scroll;
+      scrollbar-width: none; /* Firefox */
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar {
+      display: none; /* Chrome, Safari */
+    }
+  </style>
   <meta charset="UTF-8">
   <title>weirdness</title>
   <link rel="icon" href="logo.png" type="image/png">
@@ -163,6 +175,19 @@
   </div>
   <div id="loading-message">Loading assets, please wait...</div>
   <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+  <script>
     let config = {
       layerCount: 10,
       maxAssetsPerLayer: 100,
@@ -203,6 +228,13 @@
       }
     }
     
+    // Новый асинхронный поэлементный генератор ассетов и эффектов
+    let assetsLoaded = false;
+    let assetsReady = false;
+    let layerIndex = 0;
+    let assetIndex = 0;
+    let layers = [];
+
     async function loadAssets() {
       try {
         // Load local images
@@ -303,10 +335,10 @@
         }
         
         document.getElementById('loading-message').style.display = 'none';
-        initChaos();
+        assetsLoaded = true;
+        createNextAsset();
       } catch (error) {
         console.error('Error loading assets:', error);
-        // Use fallback assets if fetch fails
         assets.images = ['https://picsum.photos/200/300', 'https://source.unsplash.com/random'];
         assets.gifs = ['https://media.giphy.com/media/l0HlG8vJXW0X5yX4s/giphy.gif', 'https://media.giphy.com/media/3o7TKsrfldwKzS5GXu/giphy.gif'];
         assets.texts = ["Never gonna give you up...", " Ancient Knowledge Unlocked", "404 NOT FOUND - but your soul is"];
@@ -412,6 +444,7 @@
       const layer = document.createElement('div');
       layer.className = 'layer';
       layer.style.zIndex = layerIndex * 10;
+      // Высота слоя на всю прокручиваемую страницу
       layer.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
       // Use IntersectionObserver for lazy loading
       const assetCount = randInt(config.maxAssetsPerLayer * 0.8, config.maxAssetsPerLayer);
@@ -504,67 +537,68 @@
       }
     }
     
-    // Global arrays for animation
     let movingTexts = [];
     let activeEffects = [];
 
     function update() {
-      // Update moving texts
       movingTexts.forEach(text => {
         if (text.element && text.element.parentNode) {
           text.element.style.left = `${parseInt(text.element.style.left) + text.dx}px`;
           text.element.style.top = `${parseInt(text.element.style.top) + text.dy}px`;
         }
       });
-
-      // Filter out any effects that are no longer active
       activeEffects = activeEffects.filter(effect => effect.active);
-      
-      // Clean up any null or undefined effects
       activeEffects = activeEffects.filter(Boolean);
       
       requestAnimationFrame(update);
     }
 
-    function initChaos() {
-      document.body.innerHTML = '';
+    // Устанавливаем высоту body для вертикального скролла
+    function setBodyHeight() {
       document.body.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
-      
-      // Reset global arrays
-      movingTexts = [];
-      activeEffects = [];
-      
-      const loadingMessage = document.getElementById('loading-message');
-      if (loadingMessage) {
-        loadingMessage.style.display = 'none';
+    }
+    window.addEventListener('resize', setBodyHeight);
+
+    function createNextAsset() {
+      if (!assetsLoaded) return;
+      if (layerIndex === 0) setBodyHeight();
+      if (layerIndex >= config.layerCount) {
+        if (!window.animationRunning) {
+          window.animationRunning = true;
+          update();
+        }
+        return;
       }
-      
-      // Create layers
-      for (let i = 0; i < (config.layerSettings?.layerCount || 5); i++) {
-        const layer = createLayer(i);
+      let layer = layers[layerIndex];
+      if (!layer) {
+        layer = createLayer(layerIndex);
+        layers[layerIndex] = layer;
         document.body.appendChild(layer);
       }
-      
-      applyBackgroundImage();
-      
-      // Start the animation loop if not already running
-      if (!window.animationRunning) {
-        window.animationRunning = true;
-        update();
+      const assetCount = randInt(config.maxAssetsPerLayer * 0.8, config.maxAssetsPerLayer);
+      if (assetIndex < assetCount) {
+        const isText = Math.random() < 0.35;
+        const el = isText ? createText(layerIndex) : createImage(layerIndex);
+        layer.appendChild(el);
+        applyRandomEffects(el, layerIndex);
+        assetIndex++;
+        createNextAsset();
+      } else {
+        assetIndex = 0;
+        layerIndex++;
+        createNextAsset();
       }
-      
-      console.log('Chaos initialized with stretch effect chance:', effectChances.stretch || 0.05);
     }
 
     function applyBackgroundImage() {
       console.log('Checking background image application...');
-      console.log('Assets images length:', assets.images.length);
+      console.log('Assets images length:', assets.gifs.length);
       console.log('Config effect chances:', effectChances);
-      if (assets.images.length > 0 && effectChances) {
+      if (assets.gifs.length > 0 && effectChances) {
         console.log('Background image chance:', effectChances.backgroundImage);
         if (effectChances.backgroundImage === 1.0 || Math.random() < (effectChances.backgroundImage || 0.1)) {
           console.log('Attempting to set background image...');
-          const bgImage = rand(assets.images);
+          const bgImage = rand(assets.gifs);
           if (bgImage) {
             console.log('Setting background image:', bgImage);
             document.body.style.backgroundImage = `url('${bgImage}')`;
@@ -620,7 +654,7 @@
       window.addEventListener('load', async () => {
         await loadConfig();
         await loadAssets();
-        initChaos();
+        applyBackgroundImage();
       });
     }
   </script>
