@@ -228,7 +228,6 @@
       }
     }
     
-    // Новый асинхронный поэлементный генератор ассетов и эффектов
     let assetsLoaded = false;
     let assetsReady = false;
     let layerIndex = 0;
@@ -444,12 +443,10 @@
       const layer = document.createElement('div');
       layer.className = 'layer';
       layer.style.zIndex = layerIndex * 10;
-      // Высота слоя на всю прокручиваемую страницу
       layer.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
-      // Use IntersectionObserver for lazy loading
       const assetCount = randInt(config.maxAssetsPerLayer * 0.8, config.maxAssetsPerLayer);
       for (let i = 0; i < assetCount; i++) {
-        const isText = Math.random() < 0.5; // 50% chance for text, 50% for image/gif
+        const isText = Math.random() < 0.5;
         const el = isText ? createText(layerIndex) : createImage(layerIndex);
         layer.appendChild(el);
       }
@@ -553,7 +550,6 @@
       requestAnimationFrame(update);
     }
 
-    // Устанавливаем высоту body для вертикального скролла
     function setBodyHeight() {
       document.body.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
     }

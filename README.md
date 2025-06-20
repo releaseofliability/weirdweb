@@ -2,7 +2,7 @@
   <img src="public/logo.png" alt="WeirdWeb Logo" width="256">
 </div>
 
-[![WeirdWeb](https://img.shields.io/badge/WeirdWeb-1.0.2-blueviolet)](https://github.com/yourusername/weirdweb)
+[![WeirdWeb](https://img.shields.io/badge/WeirdWeb-1.0.3-blueviolet)](https://github.com/yourusername/weirdweb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](http://www.MIT.net/)
 [![Demo](https://img.shields.io/badge/🚀-Live_Demo-9cf?style=flat-square)](https://weirdweb.isaweye.ink)
 
@@ -76,10 +76,6 @@ Edit `config.yml` to customize:
 - `effect-chances`: Probability of visual effects
 - `layer-settings`: Number of layers and assets per layer
 - `asset-sources`: Direct URLs for specific asset types
-
-## 📸 Screenshots
-
-![Screenshot](repo/image.png)
 
 ## 📜 License
 

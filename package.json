@@ -1,6 +1,6 @@
 {
   "name": "weirdweb",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Chaotic web content generator",
   "main": "server.js",
   "scripts": {
