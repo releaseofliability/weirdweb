@@ -55,6 +55,7 @@ app.get('/config', (req, res) => {
     layerCount: config['layer-settings'].layerCount,
     maxAssetsPerLayer: config['layer-settings'].maxAssetsPerLayer,
     pageHeightMultiplier: config['layer-settings'].pageHeightMultiplier,
+    loadMode: config['load-mode'],
     'effect-chances': config['effect-chances']
   };
   res.json(configToSend);

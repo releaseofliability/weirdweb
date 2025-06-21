@@ -349,22 +349,24 @@
     function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
     
     function applyRandomEffects(el, layer) {
-      // Random rotation
-      if (Math.random() < effectChances.rotateElement) {
-        el.style.transform = `rotate(${randInt(-30, 30)}deg)`;
-      }
-      
-      // Random scale
-      if (Math.random() < effectChances.scaleElement) {
-        const scale = Math.random() * 1.5 + 0.5; // Between 0.5 and 2.0
-        el.style.transform = el.style.transform ? `${el.style.transform} scale(${scale})` : `scale(${scale})`;
-      }
-      
-      if (Math.random() < effectChances.movingText) {
-        el.classList.add('moving-text');
-        const dx = (Math.random() - 0.5) * 2;
-        const dy = (Math.random() - 0.5) * 2;
-        movingTexts.push({ element: el, dx, dy });
+      if (config.loadMode !== 'row-align') {
+        // Random rotation
+        if (Math.random() < effectChances.rotateElement) {
+          el.style.transform = `rotate(${randInt(-30, 30)}deg)`;
+        }
+        
+        // Random scale
+        if (Math.random() < effectChances.scaleElement) {
+          const scale = Math.random() * 1.5 + 0.5; // Between 0.5 and 2.0
+          el.style.transform = el.style.transform ? `${el.style.transform} scale(${scale})` : `scale(${scale})`;
+        }
+        
+        if (Math.random() < effectChances.movingText) {
+          el.classList.add('moving-text');
+          const dx = (Math.random() - 0.5) * 2;
+          const dy = (Math.random() - 0.5) * 2;
+          movingTexts.push({ element: el, dx, dy });
+        }
       }
 
       // Apply stretch effect
@@ -445,6 +447,40 @@
       layer.style.zIndex = layerIndex * 10;
       layer.style.height = `${window.innerHeight * (config.pageHeightMultiplier || 3)}px`;
       const assetCount = randInt(config.maxAssetsPerLayer * 0.8, config.maxAssetsPerLayer);
+
+      if (config.loadMode === 'row-align') {
+        const brickWidth = 240;
+        const brickHeight = 150;
+
+        const totalWidth = window.innerWidth;
+        const bricksPerRow = Math.floor(totalWidth / (brickWidth));
+        const totalAssets = config.maxAssetsPerLayer;
+        const totalRows = Math.ceil(totalAssets / bricksPerRow);
+
+        let count = 0;
+        for (let row = 0; row < totalRows; row++) {
+          const offsetX = (row % 2 === 0) ? 0 : Math.floor((brickWidth ) / 2);
+
+          for (let col = 0; col < bricksPerRow; col++) {
+            if (count >= totalAssets) break;
+
+            const isText = Math.random() < 0.6;
+            const el = isText ? createText(layerIndex) : createImage(layerIndex);
+
+            el.style.left = `${offsetX + col * (brickWidth)}px`;
+            el.style.top = `${row * (brickHeight)}px`;
+            el.style.width = `${brickWidth}px`;
+            el.style.height = `${brickHeight}px`;
+            el.style.position = 'absolute';
+
+            layer.appendChild(el);
+            count++;
+          }
+        }
+
+        return layer;
+      }
+      
       for (let i = 0; i < assetCount; i++) {
         const isText = Math.random() < 0.5;
         const el = isText ? createText(layerIndex) : createImage(layerIndex);
